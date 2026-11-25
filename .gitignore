@@ -8,3 +8,6 @@ snapshots.json
 snapshots.json.tmp
 *.log
 UpdateDetective-report*.json
+
+history.jsonl
+publish/
