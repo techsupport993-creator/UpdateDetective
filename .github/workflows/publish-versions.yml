@@ -1,0 +1,81 @@
+name: Publish versions
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-versions.yml'
+permissions:
+  contents: read
+concurrency:
+  group: publish-versions
+  cancel-in-progress: false
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - version: v1.1.0
+            source: 21cdfd110d3e18f2abe7386391bcf956441e5597
+            preview: 'false'
+          - version: v1.2.0
+            source: 0601a70dbd982245328c6d02f78eecf30a90e024
+            preview: 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.source }}
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet publish UpdateDetective.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=false -p:PublishTrimmed=false -o publish
+      - shell: pwsh
+        run: |
+          Copy-Item LICENSE,README.md publish/
+          $zip = "UpdateDetective-${{ matrix.version }}-win-x64.zip"
+          Compress-Archive -Path publish/* -DestinationPath $zip
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $zip" | Set-Content SHA256SUMS.txt -Encoding ascii
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.version }}
+          path: |
+            *.zip
+            SHA256SUMS.txt
+  release:
+    needs: package
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - version: v1.1.0
+            source: 21cdfd110d3e18f2abe7386391bcf956441e5597
+            preview: 'false'
+          - version: v1.2.0
+            source: 0601a70dbd982245328c6d02f78eecf30a90e024
+            preview: 'true'
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.version }}
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ matrix.version }}
+          SOURCE: ${{ matrix.source }}
+          PREVIEW: ${{ matrix.preview }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release already exists; leaving it unchanged."
+            exit 0
+          fi
+          flags=()
+          if [ "$PREVIEW" = true ]; then flags+=(--prerelease); fi
+          gh release create "$VERSION" *.zip SHA256SUMS.txt --repo "$GITHUB_REPOSITORY" --target "$SOURCE" --title "Update Detective $VERSION" --notes "Windows x64. Extract the entire ZIP before running UpdateDetective.exe. Requires .NET 8 Desktop Runtime. Unsigned build; runtime testing pending. Verify the ZIP using SHA256SUMS.txt." "${flags[@]}"
