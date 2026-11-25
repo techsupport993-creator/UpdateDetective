@@ -1,0 +1,8 @@
+bin/
+obj/
+Release/
+.vs/
+*.user
+*.suo
+snapshots.json
+*.log
