@@ -1,0 +1,42 @@
+name: Windows build
+on:
+  push:
+    branches: [main, 'dev/**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet publish UpdateDetective.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=false -p:PublishTrimmed=false -o publish
+      - shell: pwsh
+        run: |
+          Compress-Archive -Path publish/* -DestinationPath UpdateDetective-win-x64.zip
+          $hash = (Get-FileHash UpdateDetective-win-x64.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  UpdateDetective-win-x64.zip" | Set-Content SHA256SUMS.txt -Encoding ascii
+      - uses: actions/upload-artifact@v4
+        with:
+          name: UpdateDetective-win-x64
+          path: |
+            UpdateDetective-win-x64.zip
+            SHA256SUMS.txt
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: UpdateDetective-win-x64
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" UpdateDetective-win-x64.zip SHA256SUMS.txt --repo "${GITHUB_REPOSITORY}" --verify-tag --generate-notes
