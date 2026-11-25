@@ -1,5 +1,10 @@
-# Update Detective 1.1.0
-A local, read-only Windows executable change monitor. C# / .NET 8 / Windows Forms.
+# Update Detective
+
+**Know what changed after a software update.**
+
+A local-first, read-only Windows executable integrity investigator built in C# with .NET 8 and Windows Forms.
+
+[Releases](https://github.com/techsupport993-creator/UpdateDetective/releases) · [Report an issue](https://github.com/techsupport993-creator/UpdateDetective/issues)
 
 ## Build on Windows 10/11 x64
 1. Install the .NET 8 SDK: `winget install Microsoft.DotNet.SDK.8`
@@ -27,3 +32,7 @@ Add an EXE and scan it unchanged. For a changed binary test, copy two different 
 
 ## Build verification
 Source provided; Windows compilation and runtime testing have not been performed in the creation environment. The executable is not code-signed.
+
+## Roadmap
+- V1.2.0: investigation history, explicit unavailable-file status and improved dashboard.
+- Future: service, registry and network behavior comparisons.
