@@ -1,0 +1,67 @@
+name: Publish standalone EXEs
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-exes.yml'
+permissions:
+  contents: read
+concurrency:
+  group: publish-standalone-exes
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [v1.1.0, v1.2.0]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ matrix.version }}
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build self-contained single-file executable
+        shell: pwsh
+        run: |
+          dotnet publish UpdateDetective.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=false -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableTrimAnalyzer=false -p:DebugType=None -p:DebugSymbols=false --source https://api.nuget.org/v3/index.json -o standalone
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $name = "UpdateDetective-${{ matrix.version }}-win-x64.exe"
+          New-Item -ItemType Directory -Path assets -Force | Out-Null
+          Copy-Item standalone/UpdateDetective.exe "assets/$name" -ErrorAction Stop
+          $hash = (Get-FileHash "assets/$name" -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $name" | Set-Content "assets/$name.sha256.txt" -Encoding ascii
+      - uses: actions/upload-artifact@v4
+        with:
+          name: standalone-${{ matrix.version }}
+          path: assets/
+          if-no-files-found: error
+  upload:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [v1.1.0, v1.2.0]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: standalone-${{ matrix.version }}
+      - name: Attach EXE and checksum to existing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ matrix.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          name="UpdateDetective-$VERSION-win-x64.exe"
+          sha256sum --check "$name.sha256.txt"
+          gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null
+          gh release upload "$VERSION" "$name" "$name.sha256.txt" --repo "$GITHUB_REPOSITORY" --clobber
