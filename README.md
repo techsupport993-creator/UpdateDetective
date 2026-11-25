@@ -36,3 +36,9 @@ Source provided; Windows compilation and runtime testing have not been performed
 ## Roadmap
 - V1.2.0: investigation history, explicit unavailable-file status and improved dashboard.
 - Future: service, registry and network behavior comparisons.
+
+## V1.2.0 development preview
+- Local history of changed observations and scan failures, accessible through History.
+- Explicit unavailable-file status and scan error details.
+- History is stored in `%LOCALAPPDATA%\UpdateDetective\history.jsonl`; it can contain private paths and grows until manually removed. The history viewer displays up to 1,000 recent records.
+- Windows build and runtime validation pending.
