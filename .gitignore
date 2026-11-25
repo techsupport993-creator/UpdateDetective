@@ -11,3 +11,12 @@ UpdateDetective-report*.json
 
 history.jsonl
 publish/
+
+app.ico
+folders.json
+folders.json.tmp
+settings-v13.json
+settings-v13.json.tmp
+UpdateDetective-folders-report*.json
+standalone/
+assets/
