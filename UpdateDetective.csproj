@@ -1,5 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>WinExe</OutputType><TargetFramework>net8.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><Version>1.2.0</Version><PublishSingleFile>false</PublishSingleFile><PublishTrimmed>false</PublishTrimmed><EnableTrimAnalyzer>false</EnableTrimAnalyzer><EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer><AssemblyName>UpdateDetective</AssemblyName><EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <OutputType>WinExe</OutputType><TargetFramework>net8.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><Version>1.3.0</Version><PublishSingleFile>false</PublishSingleFile><PublishTrimmed>false</PublishTrimmed><EnableTrimAnalyzer>false</EnableTrimAnalyzer><EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer><AssemblyName>UpdateDetective</AssemblyName><EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+    <ApplicationIcon>app.ico</ApplicationIcon>
+  </PropertyGroup>
+  <Target Name="GenerateApplicationIcon" BeforeTargets="PrepareForBuild" Condition="'$(OS)' == 'Windows_NT'">
+    <Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="powershell.exe -NoProfile -NonInteractive -Command &quot;[IO.File]::WriteAllBytes('app.ico',[Convert]::FromBase64String([IO.File]::ReadAllText('app.ico.base64')))&quot;" />
+  </Target>
 </Project>
