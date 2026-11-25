@@ -1,0 +1,10 @@
+bin/
+obj/
+Release/
+.vs/
+*.user
+*.suo
+snapshots.json
+snapshots.json.tmp
+*.log
+UpdateDetective-report*.json
